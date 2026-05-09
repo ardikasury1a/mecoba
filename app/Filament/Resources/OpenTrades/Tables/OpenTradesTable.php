@@ -2,6 +2,11 @@
 
 namespace App\Filament\Resources\OpenTrades\Tables;
 
+use App\Models\Expense;
+use App\Models\Income;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -46,6 +51,45 @@ class OpenTradesTable
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('closeTrade')
+                    ->label('Close Trade')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->is_active)
+                    ->form([
+                        TextInput::make('profit_loss')
+                            ->label('Final P/L Amount')
+                            ->numeric()
+                            ->required()
+                            ->helperText('Use positive for profit, negative for loss.')
+                            ->prefix('$'),
+                    ])
+                    ->action(function ($record, array $data) {
+                        $amount = (float) $data['profit_loss'];
+                        
+                        if ($amount >= 0) {
+                            Income::create([
+                                'amount' => $amount,
+                                'category' => $record->pair,
+                                'entry_date' => now(),
+                                'description' => 'Closed Trade: ' . $record->pair . ' (Entry: ' . $record->entry_price . ')',
+                            ]);
+                        } else {
+                            Expense::create([
+                                'amount' => abs($amount),
+                                'category' => $record->pair,
+                                'entry_date' => now(),
+                                'description' => 'Closed Trade (Loss): ' . $record->pair . ' (Entry: ' . $record->entry_price . ')',
+                            ]);
+                        }
+
+                        $record->update(['is_active' => false]);
+                        
+                        Notification::make()
+                            ->title('Trade Closed Successfully')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

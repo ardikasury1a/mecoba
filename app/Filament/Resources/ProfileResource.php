@@ -18,6 +18,7 @@ class ProfileResource extends Resource
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-user-circle';
     protected static string | \UnitEnum | null $navigationGroup = 'Portfolio Assets';
     protected static ?int $navigationSort = 1;
+    protected static bool $shouldRegisterNavigation = false;
 
     public static function form(Schema $schema): Schema
     {

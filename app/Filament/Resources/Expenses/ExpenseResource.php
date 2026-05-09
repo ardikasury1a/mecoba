@@ -22,6 +22,10 @@ class ExpenseResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Trading';
 
+    protected static ?string $navigationLabel = 'Pengeluaran';
+
+    protected static ?string $modelLabel = 'Pengeluaran';
+
     protected static ?int $navigationSort = 2;
 
     protected static ?string $recordTitleAttribute = 'category';

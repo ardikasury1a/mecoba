@@ -18,7 +18,15 @@ class OpenTradeResource extends Resource
 {
     protected static ?string $model = OpenTrade::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-bolt';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Trading';
+
+    protected static ?string $navigationLabel = 'Running Trade';
+
+    protected static ?string $modelLabel = 'Running Trade';
+
+    protected static ?int $navigationSort = 3;
 
     public static function form(Schema $schema): Schema
     {

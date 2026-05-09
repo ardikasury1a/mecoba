@@ -1,28 +1,70 @@
 <x-filament-widgets::widget>
     <x-filament::section>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <a href="{{ \App\Filament\Resources\Incomes\IncomeResource::getUrl('create') }}" class="flex items-center justify-center gap-3 p-6 bg-green-600 hover:bg-green-500 text-white rounded-xl transition-all shadow-lg hover:shadow-green-500/20 group">
-                <x-filament::icon icon="heroicon-o-plus-circle" class="w-8 h-8 group-hover:scale-110 transition-transform" />
-                <div class="text-left">
-                    <span class="block text-sm opacity-80 uppercase tracking-wider font-bold">Trading</span>
-                    <span class="text-xl font-extrabold italic">TAMBAH PEMASUKAN</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between;">
+            {{-- Pemasukan --}}
+            <a href="{{ \App\Filament\Resources\Incomes\IncomeResource::getUrl('create') }}" 
+               style="flex: 1; min-width: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; border-radius: 1.5rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); transition: all 0.3s ease; text-decoration: none;"
+               onmouseover="this.style.background='rgba(16, 185, 129, 0.2)'" 
+               onmouseout="this.style.background='rgba(16, 185, 129, 0.1)'">
+                <div style="width: 3.5rem; height: 3.5rem; display: flex; align-items: center; justify-content: center; background: #10b981; border-radius: 1rem; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); margin-bottom: 0.75rem;">
+                    <x-filament::icon icon="heroicon-o-plus-circle" style="width: 2rem; height: 2rem; color: white;" />
                 </div>
+                <span style="font-size: 11px; font-weight: 900; color: #10b981; text-transform: uppercase; letter-spacing: -0.025em; text-align: center; line-height: 1.2;">Tambah<br>Pemasukan</span>
             </a>
 
-            <a href="{{ \App\Filament\Resources\Expenses\ExpenseResource::getUrl('create') }}" class="flex items-center justify-center gap-3 p-6 bg-red-600 hover:bg-red-500 text-white rounded-xl transition-all shadow-lg hover:shadow-red-500/20 group">
-                <x-filament::icon icon="heroicon-o-minus-circle" class="w-8 h-8 group-hover:scale-110 transition-transform" />
-                <div class="text-left">
-                    <span class="block text-sm opacity-80 uppercase tracking-wider font-bold">Trading</span>
-                    <span class="text-xl font-extrabold italic">TAMBAH PENGELUARAN</span>
+            {{-- Pengeluaran --}}
+            <a href="{{ \App\Filament\Resources\Expenses\ExpenseResource::getUrl('create') }}" 
+               style="flex: 1; min-width: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; border-radius: 1.5rem; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2); transition: all 0.3s ease; text-decoration: none;"
+               onmouseover="this.style.background='rgba(244, 63, 94, 0.2)'" 
+               onmouseout="this.style.background='rgba(244, 63, 94, 0.1)'">
+                <div style="width: 3.5rem; height: 3.5rem; display: flex; align-items: center; justify-content: center; background: #f43f5e; border-radius: 1rem; box-shadow: 0 0 15px rgba(244, 63, 94, 0.4); margin-bottom: 0.75rem;">
+                    <x-filament::icon icon="heroicon-o-minus-circle" style="width: 2rem; height: 2rem; color: white;" />
                 </div>
+                <span style="font-size: 11px; font-weight: 900; color: #f43f5e; text-transform: uppercase; letter-spacing: -0.025em; text-align: center; line-height: 1.2;">Tambah<br>Pengeluaran</span>
             </a>
 
-            <a href="{{ \App\Filament\Resources\Incomes\IncomeResource::getUrl('index') }}" class="flex items-center justify-center gap-3 p-6 bg-sky-600 hover:bg-sky-500 text-white rounded-xl transition-all shadow-lg hover:shadow-sky-500/20 group">
-                <x-filament::icon icon="heroicon-o-document-chart-bar" class="w-8 h-8 group-hover:scale-110 transition-transform" />
-                <div class="text-left">
-                    <span class="block text-sm opacity-80 uppercase tracking-wider font-bold">Laporan</span>
-                    <span class="text-xl font-extrabold italic">LIHAT TRANSAKSI</span>
+            {{-- Running Trade --}}
+            <a href="{{ \App\Filament\Resources\OpenTrades\OpenTradeResource::getUrl('index') }}" 
+               style="flex: 1; min-width: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; border-radius: 1.5rem; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); transition: all 0.3s ease; text-decoration: none;"
+               onmouseover="this.style.background='rgba(245, 158, 11, 0.2)'" 
+               onmouseout="this.style.background='rgba(245, 158, 11, 0.1)'">
+                <div style="width: 3.5rem; height: 3.5rem; display: flex; align-items: center; justify-content: center; background: #f59e0b; border-radius: 1rem; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); margin-bottom: 0.75rem;">
+                    <x-filament::icon icon="heroicon-o-bolt" style="width: 2rem; height: 2rem; color: white;" />
                 </div>
+                <span style="font-size: 11px; font-weight: 900; color: #f59e0b; text-transform: uppercase; letter-spacing: -0.025em; text-align: center; line-height: 1.2;">Running<br>Trade</span>
+            </a>
+
+            {{-- History Trade --}}
+            <a href="{{ \App\Filament\Resources\OpenTrades\OpenTradeResource::getUrl('index') }}" 
+               style="flex: 1; min-width: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; border-radius: 1.5rem; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); transition: all 0.3s ease; text-decoration: none;"
+               onmouseover="this.style.background='rgba(99, 102, 241, 0.2)'" 
+               onmouseout="this.style.background='rgba(99, 102, 241, 0.1)'">
+                <div style="width: 3.5rem; height: 3.5rem; display: flex; align-items: center; justify-content: center; background: #6366f1; border-radius: 1rem; box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); margin-bottom: 0.75rem;">
+                    <x-filament::icon icon="heroicon-o-clock" style="width: 2rem; height: 2rem; color: white;" />
+                </div>
+                <span style="font-size: 11px; font-weight: 900; color: #818cf8; text-transform: uppercase; letter-spacing: -0.025em; text-align: center; line-height: 1.2;">History<br>Trade</span>
+            </a>
+
+            {{-- Total Saldo --}}
+            <a href="{{ \App\Filament\Resources\Assets\AssetResource::getUrl('index') }}" 
+               style="flex: 1; min-width: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; border-radius: 1.5rem; background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.2); transition: all 0.3s ease; text-decoration: none;"
+               onmouseover="this.style.background='rgba(14, 165, 233, 0.2)'" 
+               onmouseout="this.style.background='rgba(14, 165, 233, 0.1)'">
+                <div style="width: 3.5rem; height: 3.5rem; display: flex; align-items: center; justify-content: center; background: #0ea5e9; border-radius: 1rem; box-shadow: 0 0 15px rgba(14, 165, 233, 0.4); margin-bottom: 0.75rem;">
+                    <x-filament::icon icon="heroicon-o-banknotes" style="width: 2rem; height: 2rem; color: white;" />
+                </div>
+                <span style="font-size: 11px; font-weight: 900; color: #38bdf8; text-transform: uppercase; letter-spacing: -0.025em; text-align: center; line-height: 1.2;">Total<br>Saldo</span>
+            </a>
+
+            {{-- Analisa Dashboard --}}
+            <a href="/" target="_blank" 
+               style="flex: 1; min-width: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; border-radius: 1.5rem; background: rgba(71, 85, 105, 0.1); border: 1px solid rgba(71, 85, 105, 0.2); transition: all 0.3s ease; text-decoration: none;"
+               onmouseover="this.style.background='rgba(71, 85, 105, 0.2)'" 
+               onmouseout="this.style.background='rgba(71, 85, 105, 0.1)'">
+                <div style="width: 3.5rem; height: 3.5rem; display: flex; align-items: center; justify-content: center; background: #334155; border-radius: 1rem; box-shadow: 0 0 15px rgba(51, 65, 85, 0.4); margin-bottom: 0.75rem;">
+                    <x-filament::icon icon="heroicon-o-presentation-chart-line" style="width: 2rem; height: 2rem; color: white;" />
+                </div>
+                <span style="font-size: 11px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: -0.025em; text-align: center; line-height: 1.2;">Analisa<br>Dashboard</span>
             </a>
         </div>
     </x-filament::section>

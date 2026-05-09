@@ -22,6 +22,10 @@ class IncomeResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Trading';
 
+    protected static ?string $navigationLabel = 'Pemasukan';
+
+    protected static ?string $modelLabel = 'Pemasukan';
+
     protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'category';

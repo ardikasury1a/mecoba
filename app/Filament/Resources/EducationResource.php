@@ -18,6 +18,7 @@ class EducationResource extends Resource
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-academic-cap';
     protected static string | \UnitEnum | null $navigationGroup = 'Portfolio Assets';
     protected static ?int $navigationSort = 5;
+    protected static bool $shouldRegisterNavigation = false;
     protected static ?string $pluralModelLabel = 'Education';
 
     public static function form(Schema $schema): Schema
