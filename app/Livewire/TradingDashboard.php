@@ -3,9 +3,12 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class TradingDashboard extends Component
 {
+    use WithFileUploads;
+
     public $filter = 'all';
 
     public $selectedTradeId;
@@ -13,76 +16,214 @@ class TradingDashboard extends Component
 
     // Form properties
     public $showAddForm = false;
-    public $amount;
-    public $category;
-    public $transactionType = 'income';
+    // Enhanced Quick Transaction fields
+    public $tradeImage;
+    public $stopLoss;
+    public $takeProfit;
+    public $pairName;
+    public $tradeReason;
+
+    public $isEditing = false;
+    public $editTakeProfit;
+    public $editStopLoss;
+    public $editAnalysis;
 
     public function toggleAddForm()
     {
         $this->showAddForm = !$this->showAddForm;
         if (!$this->showAddForm) {
-            $this->reset(['amount', 'category', 'transactionType']);
+            $this->reset(['tradeImage', 'stopLoss', 'takeProfit', 'pairName', 'tradeReason']);
+            $this->resetValidation();
         }
     }
 
     public function addTransaction()
     {
         $this->validate([
-            'amount' => 'required|numeric|min:0.01',
-            'category' => 'required|string|max:255',
-            'transactionType' => 'required|in:income,expense',
+            'tradeImage' => 'required|image|max:5120',
+            'pairName' => 'required|string|max:255',
+            'stopLoss' => 'required|numeric',
+            'takeProfit' => 'required|numeric',
+            'tradeReason' => 'required|string|min:5',
+        ], [
+            'tradeImage.required' => 'Upload gambar transaksi wajib diisi.',
+            'tradeImage.image' => 'File harus berupa gambar.',
+            'tradeImage.max' => 'Gambar maksimal 5MB.',
+            'pairName.required' => 'Nama pair wajib diisi.',
+            'stopLoss.required' => 'Nominal Loss wajib diisi.',
+            'stopLoss.numeric' => 'Nominal Loss harus berupa angka.',
+            'takeProfit.required' => 'Nominal Profit wajib diisi.',
+            'takeProfit.numeric' => 'Nominal Profit harus berupa angka.',
+            'tradeReason.required' => 'Alasan open trade wajib diisi.',
+            'tradeReason.min' => 'Alasan open trade minimal 5 karakter.',
         ]);
 
-        if ($this->transactionType === 'income') {
-            \App\Models\Income::create([
-                'amount' => $this->amount,
-                'category' => $this->category,
-                'entry_date' => now(),
-            ]);
-        } else {
-            \App\Models\Expense::create([
-                'amount' => $this->amount,
-                'category' => $this->category,
-                'entry_date' => now(),
-            ]);
-        }
+        // Deactivate any existing active trade first
+        \App\Models\OpenTrade::where('is_active', true)->update(['is_active' => false]);
+
+        // Upload image
+        $imagePath = $this->tradeImage->store('trades', 'public');
+
+        // Create new OpenTrade (Running Trade)
+        \App\Models\OpenTrade::create([
+            'pair' => $this->pairName,
+            'timeframe' => 'ACTIVE',
+            'image_path' => $imagePath,
+            'analysis' => $this->tradeReason,
+            'entry_price' => 0, // Not used anymore
+            'target_price' => $this->takeProfit, // This is the nominal profit
+            'stop_loss' => $this->stopLoss, // This is the nominal loss
+            'amount' => 0, // Not used anymore
+            'is_active' => true,
+        ]);
 
         $this->toggleAddForm();
-        $this->dispatch('notify', 'Transaksi berhasil ditambahkan!');
+        $this->dispatch('notify', 'Trade berhasil dibuat! Data masuk ke Running Trade.');
     }
 
     public function selectTrade($id, $type)
     {
         $this->selectedTradeId = $id;
         $this->selectedTradeType = $type;
+        $this->isEditing = false;
     }
 
-    public function finishTrade()
+    public function finishTradeProfit()
     {
         $activeTrade = \App\Models\OpenTrade::where('is_active', true)->latest()->first();
-        
-        $pair = $activeTrade ? $activeTrade->pair : 'XAUUSD';
-        $analysis = $activeTrade ? $activeTrade->analysis : 'Mock testing trade';
 
-        // Log as income (profit)
+        if (!$activeTrade) {
+            $this->dispatch('notify', 'Tidak ada trade aktif untuk diselesaikan.');
+            return;
+        }
+
+        // Record as Income (Profit) — balance increases
         \App\Models\Income::create([
-            'amount' => 240.50,
-            'category' => $pair,
+            'amount' => $activeTrade->target_price, // target_price is used to store nominal profit
+            'category' => $activeTrade->pair,
             'entry_date' => now(),
-            'description' => 'Closed trade: ' . $pair . ' (' . $analysis . ')',
+            'description' => 'Profit trade: ' . $activeTrade->pair . ' — ' . $activeTrade->analysis,
+            'image_path' => $activeTrade->image_path,
         ]);
 
-        if ($activeTrade) {
-            $activeTrade->update(['is_active' => false]);
-        }
-        
+        $activeTrade->update(['is_active' => false]);
         $this->reset(['selectedTradeId', 'selectedTradeType']);
-        $this->dispatch('notify', 'Trade selesai dan telah dicatat!');
+        $this->dispatch('notify', 'Trade PROFIT berhasil dicatat! Saldo bertambah.');
+    }
+
+    public function finishTradeLoss()
+    {
+        $activeTrade = \App\Models\OpenTrade::where('is_active', true)->latest()->first();
+
+        if (!$activeTrade) {
+            $this->dispatch('notify', 'Tidak ada trade aktif untuk diselesaikan.');
+            return;
+        }
+
+        // Record as Expense (Loss) — balance decreases
+        \App\Models\Expense::create([
+            'amount' => $activeTrade->stop_loss, // stop_loss is used to store nominal loss
+            'category' => $activeTrade->pair,
+            'entry_date' => now(),
+            'description' => 'Loss trade: ' . $activeTrade->pair . ' — ' . $activeTrade->analysis,
+            'image_path' => $activeTrade->image_path,
+        ]);
+
+        $activeTrade->update(['is_active' => false]);
+        $this->reset(['selectedTradeId', 'selectedTradeType']);
+        $this->dispatch('notify', 'Trade LOSS berhasil dicatat! Saldo berkurang.');
     }
 
     public function selectRunningTrade()
     {
-        $this->reset(['selectedTradeId', 'selectedTradeType']);
+        $this->reset(['selectedTradeId', 'selectedTradeType', 'isEditing']);
+    }
+
+    public function editTrade()
+    {
+        if (session('auth_user_email') !== 'admin@admin.com') return;
+        if (!$this->selectedTradeId || !$this->selectedTradeType) return;
+        
+        $tx = ($this->selectedTradeType === 'income') 
+            ? \App\Models\Income::find($this->selectedTradeId) 
+            : \App\Models\Expense::find($this->selectedTradeId);
+
+        if ($tx) {
+            $this->editTakeProfit = $this->selectedTradeType === 'income' ? $tx->amount : 0;
+            $this->editStopLoss = $this->selectedTradeType === 'expense' ? $tx->amount : 0;
+            $this->editAnalysis = $tx->description;
+            $this->isEditing = true;
+        }
+    }
+
+    public function saveTrade()
+    {
+        if (session('auth_user_email') !== 'admin@admin.com') return;
+        if (!$this->selectedTradeId || !$this->selectedTradeType) return;
+
+        $tx = ($this->selectedTradeType === 'income') 
+            ? \App\Models\Income::find($this->selectedTradeId) 
+            : \App\Models\Expense::find($this->selectedTradeId);
+
+        if ($tx) {
+            $takeProfitVal = (float) $this->editTakeProfit;
+            $stopLossVal = (float) $this->editStopLoss;
+
+            $isNowIncome = $takeProfitVal > 0;
+            $isNowExpense = !$isNowIncome;
+            
+            if ($isNowIncome) {
+                if ($this->selectedTradeType === 'income') {
+                    $tx->update([
+                        'amount' => $takeProfitVal,
+                        'description' => $this->editAnalysis,
+                    ]);
+                } else {
+                    $newTx = \App\Models\Income::create([
+                        'amount' => $takeProfitVal,
+                        'category' => $tx->category,
+                        'entry_date' => $tx->entry_date,
+                        'description' => $this->editAnalysis,
+                        'image_path' => $tx->image_path,
+                    ]);
+                    $tx->delete();
+                    $this->selectedTradeId = $newTx->id;
+                    $this->selectedTradeType = 'income';
+                }
+            } else {
+                if ($this->selectedTradeType === 'expense') {
+                    $tx->update([
+                        'amount' => $stopLossVal,
+                        'description' => $this->editAnalysis,
+                    ]);
+                } else {
+                    $newTx = \App\Models\Expense::create([
+                        'amount' => $stopLossVal,
+                        'category' => $tx->category,
+                        'entry_date' => $tx->entry_date,
+                        'description' => $this->editAnalysis,
+                        'image_path' => $tx->image_path,
+                    ]);
+                    $tx->delete();
+                    $this->selectedTradeId = $newTx->id;
+                    $this->selectedTradeType = 'expense';
+                }
+            }
+
+            $this->isEditing = false;
+            $this->dispatch('notify', 'Transaksi berhasil diupdate!');
+        }
+    }
+
+    public function cancelEdit()
+    {
+        $this->isEditing = false;
+    }
+
+    public function logout()
+    {
+        session()->forget(['authenticated', 'auth_user_id', 'auth_user_name']);
+        return $this->redirect('/', navigate: false);
     }
 
     public function render()
@@ -129,7 +270,7 @@ class TradingDashboard extends Component
 
         $lastWeekIncome = \App\Models\Income::whereBetween('entry_date', [$startOfLastWeek, $endOfLastWeek])->sum('amount');
         $lastWeekExpense = \App\Models\Expense::whereBetween('entry_date', [$startOfLastWeek, $endOfLastWeek])->sum('amount');
-        $lastWeekTotal = $thisWeekIncome + $thisWeekExpense; // Note: Logic maintained as per previous file state
+        $lastWeekTotal = $thisWeekIncome + $thisWeekExpense;
         $lastWeekIncomePercent = $lastWeekTotal > 0 ? ($lastWeekIncome / $lastWeekTotal) * 100 : 0;
         $lastWeekExpensePercent = $lastWeekTotal > 0 ? ($lastWeekExpense / $lastWeekTotal) * 100 : 0;
 
@@ -149,9 +290,9 @@ class TradingDashboard extends Component
                     'timeframe' => 'HISTORICAL',
                     'analysis' => $tx->description ?? ($this->selectedTradeType === 'income' ? 'Profit transaction for ' . $tx->category : 'Expense transaction for ' . $tx->category),
                     'entry_price' => $tx->amount,
-                    'target_price' => $tx->amount,
-                    'stop_loss' => 0,
-                    'image_path' => null,
+                    'target_price' => $this->selectedTradeType === 'income' ? $tx->amount : 0,
+                    'stop_loss' => $this->selectedTradeType === 'expense' ? $tx->amount : 0,
+                    'image_path' => $tx->image_path,
                     'is_historical' => true,
                 ];
             }

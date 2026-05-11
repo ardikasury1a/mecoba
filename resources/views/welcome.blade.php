@@ -1,3 +1,3 @@
-<x-layouts.app :title="__('Trading Dashboard')" :hideNav="true" :hideFooter="true">
-    <livewire:trading-dashboard />
+<x-layouts.app :title="__('Login')" :hideNav="true" :hideFooter="true">
+    <livewire:login-page />
 </x-layouts.app>

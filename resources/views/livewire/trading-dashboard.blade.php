@@ -3,12 +3,7 @@
     <div x-data="{ show: false, message: '' }" 
          x-on:notify.window="show = true; message = $event.detail; setTimeout(() => show = false, 3000)"
          x-show="show"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 transform translate-y-[-20px]"
-         x-transition:enter-end="opacity-100 transform translate-y-0"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100 transform translate-y-0"
-         x-transition:leave-end="opacity-0 transform translate-y-[-20px]"
+         x-transition
          class="fixed top-10 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 bg-accent-500 text-dark-950 rounded-full font-bold text-xs uppercase tracking-widest shadow-2xl shadow-accent-500/40"
          style="display: none;">
         <span x-text="message"></span>
@@ -23,6 +18,9 @@
             <button wire:click="toggleAddForm" class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all glass">
                 {{ $showAddForm ? 'Close' : 'Management' }}
             </button>
+            <button wire:click="logout" class="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-red-400 transition-all">
+                Logout
+            </button>
             <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-accent-500 to-emerald-600 p-[2px]">
                 <div class="w-full h-full rounded-[10px] bg-dark-900 overflow-hidden flex items-center justify-center">
                     <span class="text-[10px] font-black text-accent-500">AS</span>
@@ -35,23 +33,52 @@
     <div x-data="{ open: @entangle('showAddForm') }" x-show="open" x-collapse>
         <div class="mb-8 p-6 rounded-[2rem] bg-white/5 border border-white/5 backdrop-blur-xl relative overflow-hidden glass">
             <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-6">Quick Transaction</h3>
-            <form wire:submit.prevent="addTransaction" class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+            <form wire:submit.prevent="addTransaction" class="space-y-4">
+
+                {{-- Upload Gambar --}}
                 <div class="space-y-3">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Type</label>
-                    <div class="grid grid-cols-2 gap-2 p-1 bg-black/40 rounded-xl border border-white/5">
-                        <button type="button" wire:click="$set('transactionType', 'income')" class="py-2 rounded-lg text-[9px] font-bold uppercase transition-all {{ $transactionType === 'income' ? 'bg-accent-500 text-dark-950' : 'text-slate-500' }}">Profit</button>
-                        <button type="button" wire:click="$set('transactionType', 'expense')" class="py-2 rounded-lg text-[9px] font-bold uppercase transition-all {{ $transactionType === 'expense' ? 'bg-red-500 text-white' : 'text-slate-500' }}">Loss</button>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Upload Gambar Transaksi <span class="text-red-400">*</span></label>
+                    <div class="relative">
+                        @if ($tradeImage)
+                            <div class="mb-2 rounded-xl overflow-hidden border border-white/10">
+                                <img src="{{ $tradeImage->temporaryUrl() }}" class="w-full h-40 object-cover opacity-80">
+                            </div>
+                        @endif
+                        <input type="file" wire:model="tradeImage" accept="image/*" class="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs text-white file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[9px] file:font-bold file:uppercase file:bg-accent-500/20 file:text-accent-500">
+                        <div wire:loading wire:target="tradeImage" class="text-[9px] text-accent-500 mt-1 ml-1">Uploading...</div>
+                    </div>
+                    @error('tradeImage') <span class="text-[10px] font-bold text-red-400 ml-1">{{ $message }}</span> @enderror
+                </div>
+
+                {{-- Nama Pair --}}
+                <div class="space-y-3">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nama Pair <span class="text-red-400">*</span></label>
+                    <input type="text" wire:model="pairName" placeholder="XAUUSD" class="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs focus:border-accent-500 focus:ring-0 text-white">
+                    @error('pairName') <span class="text-[10px] font-bold text-red-400 ml-1">{{ $message }}</span> @enderror
+                </div>
+
+                {{-- SL / TP --}}
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-3">
+                        <label class="text-[10px] font-bold text-red-400 uppercase tracking-widest ml-1">Nominal Loss ($) <span class="text-red-400">*</span></label>
+                        <input type="number" step="any" wire:model="stopLoss" placeholder="0.00" class="w-full bg-black/40 border border-red-500/20 rounded-xl px-3 py-2.5 text-xs focus:border-red-500 focus:ring-0 text-white">
+                        @error('stopLoss') <span class="text-[9px] font-bold text-red-400 ml-1">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="space-y-3">
+                        <label class="text-[10px] font-bold text-accent-500 uppercase tracking-widest ml-1">Nominal Profit ($) <span class="text-red-400">*</span></label>
+                        <input type="number" step="any" wire:model="takeProfit" placeholder="0.00" class="w-full bg-black/40 border border-accent-500/20 rounded-xl px-3 py-2.5 text-xs focus:border-accent-500 focus:ring-0 text-white">
+                        @error('takeProfit') <span class="text-[9px] font-bold text-red-400 ml-1">{{ $message }}</span> @enderror
                     </div>
                 </div>
+
+                {{-- Alasan Open Trade --}}
                 <div class="space-y-3">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Asset / Pair</label>
-                    <input type="text" wire:model="category" placeholder="XAUUSD" class="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs focus:border-accent-500 focus:ring-0 text-white">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Alasan Open Trade <span class="text-red-400">*</span></label>
+                    <textarea wire:model="tradeReason" rows="3" placeholder="Jelaskan alasan entry..." class="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs focus:border-accent-500 focus:ring-0 text-white resize-none"></textarea>
+                    @error('tradeReason') <span class="text-[10px] font-bold text-red-400 ml-1">{{ $message }}</span> @enderror
                 </div>
-                <div class="space-y-3">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Amount</label>
-                    <input type="number" wire:model="amount" placeholder="0.00" class="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs focus:border-accent-500 focus:ring-0 text-white">
-                </div>
-                <button type="submit" class="w-full py-3 bg-white text-dark-950 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-accent-500 transition-all">Save</button>
+
+                <button type="submit" class="w-full py-3 bg-white text-dark-950 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-accent-500 transition-all">Save Trade</button>
             </form>
         </div>
     </div>
@@ -152,61 +179,15 @@
         </div>
     </div>
 
-    {{-- Section 4: Mapping / Chart Image --}}
-    <div class="mb-6 aspect-[4/3] relative rounded-[2rem] overflow-hidden border border-white/5 glass">
-        @if($openTrade && $openTrade->image_path)
-            <img src="{{ asset('storage/' . $openTrade->image_path) }}" class="w-full h-full object-cover opacity-80" alt="Mapping">
-        @else
-            <div class="w-full h-full flex flex-col items-center justify-center gap-4 text-slate-700 bg-black/20">
-                <svg class="w-16 h-16 opacity-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002-2z"/></svg>
-                <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30">Waiting for Signal...</span>
-            </div>
-        @endif
-        <div class="absolute inset-0 bg-gradient-to-t from-dark-950/90 via-transparent to-transparent"></div>
-        <div class="absolute bottom-6 left-6 flex gap-3">
-            <span class="px-4 py-2 {{ isset($openTrade->is_historical) ? 'bg-primary-500' : 'bg-accent-500' }} text-dark-950 text-[9px] font-black uppercase rounded-full">
-                {{ isset($openTrade->is_historical) ? 'HISTORICAL' : 'ACTIVE' }}
-            </span>
-            <span class="px-4 py-2 bg-white/10 text-white text-[9px] font-black uppercase rounded-full backdrop-blur-md">
-                {{ $openTrade->timeframe ?? 'M15' }}
-            </span>
-        </div>
-    </div>
-
-    {{-- Section 5: Analysis --}}
-    <div class="mb-6 p-6 rounded-[2rem] bg-dark-800/40 border border-white/5 glass">
-        <div class="flex items-center gap-3 mb-5">
-            <div class="w-8 h-8 rounded-lg bg-accent-500/10 flex items-center justify-center text-accent-500">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-            <h2 class="text-[10px] font-black uppercase tracking-widest text-white">
-                {{ isset($openTrade->is_historical) ? 'Detail Transaksi' : 'Analisa Open Trade' }}
-            </h2>
-        </div>
-        <p class="text-xs text-slate-400 leading-relaxed font-medium mb-6">
-            {{ $openTrade->analysis ?? 'Belum ada analisa aktif. Sistem sedang memindai peluang di market berdasarkan kriteria setup high-probability.' }}
-        </p>
-        <div class="space-y-3">
-            <div class="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">
-                <span class="text-[9px] font-bold text-slate-500 uppercase">Entry</span>
-                <span class="text-xs font-black text-white">{{ $openTrade ? number_format($openTrade->entry_price, 2) : '0.00' }}</span>
-            </div>
-            <div class="flex justify-between items-center p-3 bg-accent-500/10 rounded-xl border border-accent-500/20">
-                <span class="text-[9px] font-bold text-accent-500 uppercase">Target</span>
-                <span class="text-xs font-black text-accent-500">{{ $openTrade ? number_format($openTrade->target_price, 2) : '0.00' }}</span>
-            </div>
-            <div class="flex justify-between items-center p-3 bg-red-500/10 rounded-xl border border-red-500/20">
-                <span class="text-[9px] font-bold text-red-500 uppercase">Stop Loss</span>
-                <span class="text-xs font-black text-red-500">{{ $openTrade ? number_format($openTrade->stop_loss, 2) : '0.00' }}</span>
-            </div>
-        </div>
-    </div>
-
     {{-- Section 6: Running Trade --}}
+    @if($runningTrade)
     <div wire:click="selectRunningTrade" class="mb-6 p-6 rounded-[2rem] bg-[#0a0d14]/80 border border-white/5 glass flex items-center gap-6 relative overflow-hidden cursor-pointer hover:bg-[#0a0d14]/90 transition-all group">
-        <div class="absolute top-4 right-4">
-            <button wire:click.stop="finishTrade" class="px-4 py-2 bg-accent-500/10 border border-accent-500/20 rounded-xl text-[9px] font-black text-accent-500 uppercase tracking-widest hover:bg-accent-500 hover:text-dark-950 transition-all">
-                Finish Trade
+        <div class="absolute top-4 right-4 flex gap-2">
+            <button wire:click.stop="finishTradeProfit" class="px-4 py-2 bg-accent-500/10 border border-accent-500/20 rounded-xl text-[9px] font-black text-accent-500 uppercase tracking-widest hover:bg-accent-500 hover:text-dark-950 transition-all">
+                Finish Profit
+            </button>
+            <button wire:click.stop="finishTradeLoss" class="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-xl text-[9px] font-black text-red-500 uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">
+                Finish Loss
             </button>
         </div>
         <div class="relative w-16 h-16 flex items-center justify-center flex-shrink-0">
@@ -219,13 +200,114 @@
         <div>
             <p class="text-[10px] font-black text-white uppercase tracking-widest mb-1">Running Trade</p>
             <p class="text-[14px] font-black text-white tracking-tight uppercase">
-                {{ $runningTrade->pair ?? 'XAUUSD' }} <span class="text-accent-500 ml-1">• BUY</span>
+                {{ $runningTrade->pair }} <span class="text-accent-500 ml-1">• ACTIVE</span>
             </p>
             <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
-                P/L: <span class="text-accent-500">+$240.50</span>
+                Target Profit: <span class="text-accent-500">${{ number_format($runningTrade->target_price, 2) }}</span> |
+                Stop Loss: <span class="text-red-500">${{ number_format($runningTrade->stop_loss, 2) }}</span>
             </p>
         </div>
     </div>
+    @else
+    <div class="mb-6 p-6 rounded-[2rem] bg-[#0a0d14]/80 border border-white/5 glass flex items-center gap-6 relative overflow-hidden">
+        <div class="relative w-16 h-16 flex items-center justify-center flex-shrink-0">
+            <div class="w-14 h-14 rounded-full border-4 border-slate-800 flex items-center justify-center">
+                <div class="w-9 h-9 rounded-full bg-slate-800/50 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+                </div>
+            </div>
+        </div>
+        <div>
+            <p class="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Running Trade</p>
+            <p class="text-[14px] font-black text-slate-500 tracking-tight">Tidak ada running trade</p>
+            <p class="text-[10px] font-bold text-slate-700 uppercase tracking-widest mt-1">Buat trade baru melalui Quick Transaction</p>
+        </div>
+    </div>
+    @endif
+
+    {{-- Section 4: Mapping / Chart Image --}}
+    <div class="mb-6 aspect-[4/3] relative rounded-[2rem] overflow-hidden border border-white/5 glass">
+        @if($runningTrade && $runningTrade->image_path)
+            <img src="{{ asset('storage/' . $runningTrade->image_path) }}" class="w-full h-full object-cover opacity-80" alt="Mapping">
+        @elseif($openTrade && isset($openTrade->image_path) && $openTrade->image_path)
+            <img src="{{ asset('storage/' . $openTrade->image_path) }}" class="w-full h-full object-cover opacity-80" alt="Mapping">
+        @else
+            <div class="w-full h-full flex flex-col items-center justify-center gap-4 text-slate-700 bg-black/20">
+                <svg class="w-16 h-16 opacity-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002-2z"/></svg>
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30">Waiting for Signal...</span>
+            </div>
+        @endif
+        <div class="absolute inset-0 bg-gradient-to-t from-dark-950/90 via-transparent to-transparent"></div>
+        @if($runningTrade || $openTrade)
+        <div class="absolute bottom-6 left-6 flex gap-3">
+            <span class="px-4 py-2 {{ ($openTrade && isset($openTrade->is_historical)) ? 'bg-primary-500' : 'bg-accent-500' }} text-dark-950 text-[9px] font-black uppercase rounded-full">
+                {{ ($openTrade && isset($openTrade->is_historical)) ? 'HISTORICAL' : 'ACTIVE' }}
+            </span>
+            <span class="px-4 py-2 bg-white/10 text-white text-[9px] font-black uppercase rounded-full backdrop-blur-md">
+                {{ $openTrade->timeframe ?? ($runningTrade->timeframe ?? 'M15') }}
+            </span>
+        </div>
+        @endif
+    </div>
+
+    {{-- Section 5: Analysis --}}
+    <div class="mb-6 p-6 rounded-[2rem] bg-dark-800/40 border border-white/5 glass">
+        <div class="flex justify-between items-start mb-5">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-accent-500/10 flex items-center justify-center text-accent-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <h2 class="text-[10px] font-black uppercase tracking-widest text-white">
+                    {{ ($openTrade && isset($openTrade->is_historical)) ? 'Detail Transaksi' : 'Analisa Open Trade' }}
+                </h2>
+            </div>
+            @if(session('auth_user_email') === 'admin@admin.com' && $openTrade && isset($openTrade->is_historical))
+                @if(!$isEditing)
+                <button wire:click="editTrade" class="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-xl text-[9px] font-black text-accent-500 uppercase tracking-widest transition-all">
+                    Edit
+                </button>
+                @endif
+            @endif
+        </div>
+        @if($isEditing)
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1 mb-1 block">Alasan Open Trade</label>
+                    <textarea wire:model="editAnalysis" rows="3" class="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-2 text-xs focus:border-accent-500 focus:ring-0 text-white resize-none"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[9px] font-bold text-accent-500 uppercase tracking-widest ml-1 mb-1 block">Nominal Profit ($)</label>
+                        <input type="number" step="any" wire:model="editTakeProfit" class="w-full bg-black/40 border border-accent-500/20 rounded-xl px-4 py-2 text-xs focus:border-accent-500 focus:ring-0 text-white">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold text-red-500 uppercase tracking-widest ml-1 mb-1 block">Nominal Loss ($)</label>
+                        <input type="number" step="any" wire:model="editStopLoss" class="w-full bg-black/40 border border-red-500/20 rounded-xl px-4 py-2 text-xs focus:border-red-500 focus:ring-0 text-white">
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button wire:click="saveTrade" class="flex-1 py-2 bg-accent-500 text-dark-950 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-accent-400 transition-all">Save</button>
+                    <button wire:click="cancelEdit" class="flex-1 py-2 bg-white/5 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">Cancel</button>
+                </div>
+            </div>
+        @else
+            <p class="text-xs text-slate-400 leading-relaxed font-medium mb-6">
+                {{ $openTrade->analysis ?? 'Belum ada analisa aktif. Sistem sedang memindai peluang di market berdasarkan kriteria setup high-probability.' }}
+            </p>
+        @endif
+        <div class="space-y-3">
+            <div class="flex justify-between items-center p-3 bg-accent-500/10 rounded-xl border border-accent-500/20">
+                <span class="text-[9px] font-bold text-accent-500 uppercase">Target Profit ($)</span>
+                <span class="text-xs font-black text-accent-500">{{ $openTrade ? number_format($openTrade->target_price, 2) : '0.00' }}</span>
+            </div>
+            <div class="flex justify-between items-center p-3 bg-red-500/10 rounded-xl border border-red-500/20">
+                <span class="text-[9px] font-bold text-red-500 uppercase">Stop Loss ($)</span>
+                <span class="text-xs font-black text-red-500">{{ $openTrade ? number_format($openTrade->stop_loss, 2) : '0.00' }}</span>
+            </div>
+        </div>
+    </div>
+
+
 
     {{-- Section 7: Recent Transactions --}}
     <div class="mb-6 p-6 rounded-[2rem] bg-dark-800/40 border border-white/5 glass">
@@ -248,7 +330,7 @@
                     <div class="text-[8px] font-bold text-slate-600 uppercase">{{ \Carbon\Carbon::parse($tx['date'])->format('d M, Y') }}</div>
                 </div>
                 <div class="text-right flex-shrink-0">
-                    <div class="text-xs font-black {{ $tx['color'] }}">{{ $tx['amount'] > 0 ? '+' : '' }}{{ number_format($tx['amount'] / 16000, 2) }}</div>
+                    <div class="text-xs font-black {{ $tx['color'] }}">{{ $tx['amount'] > 0 ? '+' : '' }}{{ number_format($tx['amount'], 2) }}</div>
                 </div>
             </div>
             @endforeach
@@ -264,19 +346,9 @@
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #00e699;
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00e699; }
     </style>
 </div>

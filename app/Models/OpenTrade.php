@@ -17,6 +17,7 @@ class OpenTrade extends Model
         'entry_price',
         'target_price',
         'stop_loss',
+        'amount',
         'is_active',
     ];
 }

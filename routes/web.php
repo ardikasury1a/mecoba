@@ -13,5 +13,22 @@ Route::get('/', function () {
         return redirect('/');
     }
 
+    // If already authenticated, redirect to dashboard
+    if (session('authenticated')) {
+        return redirect('/dashboard');
+    }
+
     return view('welcome');
+});
+
+Route::get('/dashboard', function () {
+    if (!session('authenticated')) {
+        return redirect('/');
+    }
+    return view('dashboard');
+});
+
+Route::get('/logout', function () {
+    session()->forget(['authenticated', 'auth_user_id', 'auth_user_name']);
+    return redirect('/');
 });

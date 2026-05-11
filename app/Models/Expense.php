@@ -11,5 +11,6 @@ class Expense extends Model
         'category',
         'entry_date',
         'description',
+        'image_path',
     ];
 }
