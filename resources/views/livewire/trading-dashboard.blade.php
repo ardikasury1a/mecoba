@@ -1,4 +1,5 @@
 <div class="min-h-screen bg-dashboard text-slate-300 p-4 md:p-6 lg:p-8 font-sans selection:bg-accent-500/30 relative overflow-hidden max-w-4xl mx-auto">
+
     {{-- Notification --}}
     <div x-data="{ show: false, message: '' }" 
          x-on:notify.window="show = true; message = $event.detail; setTimeout(() => show = false, 3000)"
@@ -83,13 +84,50 @@
         </div>
     </div>
 
+    {{-- Override Totals Panel --}}
+    <div x-data="{ open: @entangle('showOverrideForm') }" x-show="open" x-collapse>
+        <div class="mb-8 p-6 rounded-[2rem] bg-white/5 border border-white/5 backdrop-blur-xl relative overflow-hidden glass">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xs font-black uppercase tracking-widest text-slate-400">Edit Portfolio Totals</h3>
+                <button wire:click="resetOverrides" class="text-[9px] font-bold text-red-400 hover:text-red-300 uppercase tracking-widest transition-all">Reset to Auto</button>
+            </div>
+            <form wire:submit.prevent="saveOverrides" class="space-y-4">
+                <div class="space-y-3">
+                    <label class="text-[10px] font-bold text-accent-500 uppercase tracking-widest ml-1">Total Saldo ($)</label>
+                    <input type="number" step="any" wire:model="editTotalBalance" class="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs focus:border-accent-500 focus:ring-0 text-white">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-3">
+                        <label class="text-[10px] font-bold text-accent-500 uppercase tracking-widest ml-1">Pemasukan ($)</label>
+                        <input type="number" step="any" wire:model="editTotalIncome" class="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs focus:border-accent-500 focus:ring-0 text-white">
+                    </div>
+                    <div class="space-y-3">
+                        <label class="text-[10px] font-bold text-red-400 uppercase tracking-widest ml-1">Pengeluaran ($)</label>
+                        <input type="number" step="any" wire:model="editTotalExpense" class="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs focus:border-red-500 focus:ring-0 text-white">
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 py-3 bg-white text-dark-950 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-accent-500 transition-all">Save Totals</button>
+                    <button type="button" wire:click="toggleOverrideForm" class="flex-1 py-3 bg-white/5 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     {{-- Section 1: Portfolio Balance --}}
     <div class="mb-6 p-8 rounded-[2rem] bg-[#0a0d14]/80 border border-white/5 glass relative overflow-hidden">
-        <div class="mb-6">
-            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-[0.3em] mb-3">Total Saldo Portofolio</p>
-            <h2 class="text-5xl md:text-6xl font-black text-white tracking-tighter leading-none">
-                ${{ number_format($balance, 2, '.', ',') }}
-            </h2>
+        <div class="mb-6 flex justify-between items-start">
+            <div>
+                <p class="text-[9px] font-bold text-slate-500 uppercase tracking-[0.3em] mb-3">Total Saldo Portofolio</p>
+                <h2 class="text-5xl md:text-6xl font-black text-white tracking-tighter leading-none">
+                    ${{ number_format($balance, 2, '.', ',') }}
+                </h2>
+            </div>
+            @if(session('auth_user_email') === 'admin@admin.com')
+            <button wire:click="toggleOverrideForm" class="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-xl text-[9px] font-black text-accent-500 uppercase tracking-widest transition-all">
+                Edit
+            </button>
+            @endif
         </div>
         <div class="flex items-center gap-6 mb-6">
             <div>
@@ -103,12 +141,20 @@
                 <span class="text-accent-500">{{ $profitCount }} Profit</span>
             </div>
         </div>
-        <div class="grid grid-cols-2 gap-6 pt-6 border-t border-white/5">
-            <div>
+        <div class="grid grid-cols-2 gap-6 pt-6 border-t border-white/5 relative overflow-hidden">
+            {{-- Dragon Silhouette --}}
+            <div class="dragon-pacer absolute inset-0 pointer-events-none z-0 flex items-center opacity-30">
+                <div class="relative flex items-center">
+                    <span class="text-2xl filter-green transform scale-x-[-1]">🐉</span>
+                    <div class="periodic-fire-css absolute left-[24px] top-[10px]"></div>
+                </div>
+            </div>
+
+            <div class="relative z-10">
                 <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2">Pemasukan Bulanan</p>
                 <p class="text-2xl font-black text-accent-500 tracking-tight">+${{ number_format($totalIncome, 0, '.', ',') }}</p>
             </div>
-            <div>
+            <div class="relative z-10">
                 <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2">Pengeluaran Bulanan</p>
                 <p class="text-2xl font-black text-red-500 tracking-tight">-${{ number_format($totalExpense, 0, '.', ',') }}</p>
             </div>
@@ -350,5 +396,41 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00e699; }
+
+        /* Dragon Animation Refined */
+        .filter-green {
+            filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%);
+        }
+
+        .dragon-pacer {
+            animation: sectionPace 12s linear infinite;
+            will-change: transform;
+            width: fit-content;
+        }
+
+        @keyframes sectionPace {
+            0% { transform: translateX(-100px) scaleX(1); }
+            45% { transform: translateX(400px) scaleX(1); }
+            50% { transform: translateX(400px) scaleX(-1); }
+            95% { transform: translateX(-100px) scaleX(-1); }
+            100% { transform: translateX(-100px) scaleX(1); }
+        }
+
+        .periodic-fire-css {
+            width: 0;
+            height: 3px;
+            background: linear-gradient(to right, #fbbf24, #ef4444);
+            border-radius: 4px;
+            box-shadow: 0 0 8px #f59e0b;
+            animation: fireCycle 4s ease-in-out infinite;
+            opacity: 0;
+            transform-origin: left center;
+        }
+
+        @keyframes fireCycle {
+            0%, 70% { width: 0; opacity: 0; }
+            75%, 90% { width: 30px; opacity: 1; }
+            100% { width: 0; opacity: 0; }
+        }
     </style>
 </div>

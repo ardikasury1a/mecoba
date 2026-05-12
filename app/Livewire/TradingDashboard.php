@@ -28,6 +28,12 @@ class TradingDashboard extends Component
     public $editStopLoss;
     public $editAnalysis;
 
+    // Overrides
+    public $showOverrideForm = false;
+    public $editTotalBalance;
+    public $editTotalIncome;
+    public $editTotalExpense;
+
     public function toggleAddForm()
     {
         $this->showAddForm = !$this->showAddForm;
@@ -226,11 +232,76 @@ class TradingDashboard extends Component
         return $this->redirect('/', navigate: false);
     }
 
+    public function toggleOverrideForm()
+    {
+        if (session('auth_user_email') !== 'admin@admin.com') return;
+        
+        $this->showOverrideForm = !$this->showOverrideForm;
+        
+        if ($this->showOverrideForm) {
+            $adminUser = \App\Models\User::where('email', 'admin@admin.com')->first();
+            if ($adminUser) {
+                $trueIncome = \App\Models\Income::sum('amount');
+                $trueExpense = \App\Models\Expense::sum('amount');
+                $trueBalance = $trueIncome - $trueExpense;
+
+                $this->editTotalBalance = $adminUser->balance_override !== null ? $adminUser->balance_override : $trueBalance;
+                $this->editTotalIncome = $adminUser->income_override !== null ? $adminUser->income_override : $trueIncome;
+                $this->editTotalExpense = $adminUser->expense_override !== null ? $adminUser->expense_override : $trueExpense;
+            }
+        }
+    }
+
+    public function saveOverrides()
+    {
+        if (session('auth_user_email') !== 'admin@admin.com') return;
+
+        $adminUser = \App\Models\User::where('email', 'admin@admin.com')->first();
+        if ($adminUser) {
+            $adminUser->update([
+                'balance_override' => $this->editTotalBalance === '' ? null : $this->editTotalBalance,
+                'income_override' => $this->editTotalIncome === '' ? null : $this->editTotalIncome,
+                'expense_override' => $this->editTotalExpense === '' ? null : $this->editTotalExpense,
+            ]);
+            $this->showOverrideForm = false;
+            $this->dispatch('notify', 'Total Saldo dan Pemasukan/Pengeluaran berhasil diperbarui!');
+        }
+    }
+    
+    public function resetOverrides()
+    {
+        if (session('auth_user_email') !== 'admin@admin.com') return;
+
+        $adminUser = \App\Models\User::where('email', 'admin@admin.com')->first();
+        if ($adminUser) {
+            $adminUser->update([
+                'balance_override' => null,
+                'income_override' => null,
+                'expense_override' => null,
+            ]);
+            $this->showOverrideForm = false;
+            $this->dispatch('notify', 'Total Saldo di-reset ke nilai asli perhitungan sistem.');
+        }
+    }
+
     public function render()
     {
         $totalIncome = \App\Models\Income::sum('amount');
         $totalExpense = \App\Models\Expense::sum('amount');
         $balance = $totalIncome - $totalExpense;
+
+        $adminUser = \App\Models\User::where('email', 'admin@admin.com')->first();
+        if ($adminUser) {
+            if ($adminUser->balance_override !== null) {
+                $balance = $adminUser->balance_override;
+            }
+            if ($adminUser->income_override !== null) {
+                $totalIncome = $adminUser->income_override;
+            }
+            if ($adminUser->expense_override !== null) {
+                $totalExpense = $adminUser->expense_override;
+            }
+        }
 
         $recentTransactions = collect()
             ->when($this->filter === 'all' || $this->filter === 'profit', fn($c) => $c->concat(\App\Models\Income::latest()->take(10)->get()->map(fn($i) => [
